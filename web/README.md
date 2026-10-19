@@ -66,6 +66,21 @@ Optional TURN settings:
 
 TURN credentials must be passed to browsers for ICE to use them and are therefore visible to those clients. Prefer expiring credentials from a TURN provider for production rather than a permanent shared credential. Public STUN is configured by default but does not guarantee connectivity through every firewall/NAT. A TURN provider may cost money.
 
+### Fixing “Audio link interrupted” / blank connection metrics
+
+If text messages work but voice changes to **RETRY** and packet loss/jitter/RTT remain blank, the WebSocket signaling path is working but WebRTC has not established a media path. The default configuration uses STUN only, which cannot relay media when the peers' networks prevent a direct path.
+
+1. Create a TURN credential with a TURN provider. Metered's Open Relay offers a free usage allowance; check the provider's current account and usage terms before use: <https://www.metered.ca/tools/openrelay/>. In its dashboard, create a TURN credential and copy the ICE server URLs, username, and credential/password.
+2. In Render, open the `tcp-udp-text-voice-chat-browser` web service → **Environment** → add these three variables:
+   - `TURN_URLS`: comma-separated TURN URLs from your provider's ICE server array, for example `turn:global.relay.metered.ca:80,turn:global.relay.metered.ca:80?transport=tcp,turn:global.relay.metered.ca:443,turns:global.relay.metered.ca:443?transport=tcp`. Use the exact URLs your credential page gives you.
+   - `TURN_USERNAME`: the TURN credential username.
+   - `TURN_CREDENTIAL`: the TURN credential password.
+3. Save the environment changes and wait for Render to redeploy. Do not paste the TURN password into GitHub, source files, or chat.
+4. Refresh both browsers, leave the old room, create/join the same room again from two browsers/devices, and allow microphone access on both sides.
+5. The UI should now report TURN as configured if negotiation fails; if it still fails, inspect the browser console and Render logs and verify that the provider's TURN credential is active and its listed transports are allowed.
+
+Metrics intentionally remain blank until a WebRTC peer connection is active and inbound audio RTP statistics are available. “0 received packets” means no inbound audio packets have arrived; it is not evidence that packet loss is 0%.
+
 ## Limitations
 
 - This is a college demonstration, not a secure communications service. There is no authentication, end-to-end identity, persistent chat history, or abuse-management system.
