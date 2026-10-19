@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="description" content="A browser-based demonstration of real-time text chat, WebRTC voice, and live connection metrics.">
+  <title>Relay — Real-time Text & Voice</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Relay home">
+        <span class="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 16h7l4-8 5 16 4-8h2"/><circle cx="5" cy="16" r="2"/><circle cx="27" cy="16" r="2"/></svg></span>
+        <span class="brand-name">relay<span class="brand-dot">.</span></span>
+      </a>
+      <div class="topbar-right"><span class="topbar-label">NETWORK LAB <span class="live-dot"></span></span><a href="https://github.com/VIKRAM591494/tcp-udp-text-voice-chat" target="_blank" rel="noreferrer" class="github-link">Project source <span aria-hidden="true">↗</span></a></div>
+    </header>
+
+    <main>
+      <section class="hero-row">
+        <div>
+          <p class="eyebrow"><span class="eyebrow-line"></span> REAL-TIME COMMUNICATION LAB</p>
+          <h1>Every word.<br><span>Every millisecond.</span></h1>
+          <p class="hero-copy">A small, live room for text and voice. Connect a second device, talk in real time, and watch the network metrics respond.</p>
+        </div>
+        <div class="hero-card"><div class="hero-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M5.64 5.64l12.72 12.72M18.36 5.64 5.64 18.36"/></svg></div><div><strong>Peer-to-peer voice</strong><span>WebRTC media · live telemetry</span></div><span class="status-pill" id="topStatus"><i></i> READY</span></div>
+      </section>
+
+      <section class="join-panel panel" id="joinPanel">
+        <div class="panel-heading"><div><p class="section-kicker">01 / GET CONNECTED</p><h2>Start a private room</h2><p class="muted">Share the room code with one other person. No account needed.</p></div><span class="step-icon">↗</span></div>
+        <form id="joinForm" class="join-form">
+          <label class="field"><span>Your display name</span><input id="nameInput" maxlength="30" value="Guest" autocomplete="nickname" placeholder="e.g. Alex" required></label>
+          <label class="field room-field"><span>Room code</span><div class="room-input-wrap"><input id="roomInput" maxlength="32" pattern="[A-Za-z0-9_-]{3,32}" required><button id="newRoomBtn" class="icon-button" type="button" title="Generate a new room code" aria-label="Generate a new room code">⟳</button></div></label>
+          <button id="joinBtn" class="primary-button" type="submit"><span>Enable mic & join</span><span class="button-arrow">→</span></button>
+        </form>
+        <div class="join-foot"><span class="privacy-icon">◇</span><span>Room content is relayed in memory only and isn't saved as chat history.</span><span class="room-limit">2 PEOPLE MAX</span></div>
+      </section>
+
+      <section id="roomPanel" class="room-panel hidden">
+        <div class="room-toolbar panel"><div class="room-title"><span class="connected-icon"><span></span><span></span></span><div><p class="section-kicker">02 / LIVE SESSION</p><h2 id="roomHeading">Room <span id="roomLabel"></span></h2></div></div><div class="room-toolbar-actions"><button id="copyRoomBtn" class="secondary-button">▣ <span>Copy invite</span></button><button id="leaveBtn" class="danger-button">Leave room <span>×</span></button></div></div>
+        <div class="workspace-grid">
+          <section class="chat-panel panel">
+            <div class="panel-heading compact"><div><p class="section-kicker">MESSAGES</p><h2>Conversation</h2></div><span class="count-chip" id="messageCount">0</span></div>
+            <div class="peer-strip"><div class="peer-avatar" id="selfAvatar">G</div><div class="peer-meta"><strong id="selfName">Guest</strong><span>You <span class="self-online-dot"></span></span></div><div class="peer-separator"></div><div class="peer-avatar remote-avatar" id="remoteAvatar">?</div><div class="peer-meta"><strong id="remoteName">Waiting for peer</strong><span id="remoteState">Not connected</span></div></div>
+            <div class="messages" id="messages" aria-live="polite"><div class="empty-state" id="emptyState"><div class="empty-orbit"><span>···</span></div><strong>Room is ready</strong><p>Send an invite, then say hello when your peer joins.</p></div></div>
+            <form id="chatForm" class="chat-compose"><input id="chatInput" maxlength="2000" placeholder="Write a message…" autocomplete="off" aria-label="Chat message"><button class="send-button" type="submit" aria-label="Send message">↑</button></form>
+            <div class="chat-foot"><span><kbd>Enter</kbd> to send</span><span id="socketStatus" class="socket-status"><i></i> CONNECTING</span></div>
+          </section>
+
+          <div class="right-column">
+            <section class="voice-panel panel">
+              <div class="panel-heading compact"><div><p class="section-kicker">VOICE LINK</p><h2>Audio channel</h2></div><span id="voiceBadge" class="voice-badge pending"><i></i> WAITING</span></div>
+              <div class="voice-visual" id="voiceVisual"><div class="voice-ring ring-one"></div><div class="voice-ring ring-two"></div><div class="voice-core"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11v1a7 7 0 0 0 14 0v-1M12 19v3M8 22h8"/></svg></div><div class="voice-wave wave-a"></div><div class="voice-wave wave-b"></div></div>
+              <p class="voice-status-title" id="voiceTitle">Ready when you are</p><p class="voice-status-copy" id="voiceCopy">Allow microphone access, then invite a peer to start voice.</p>
+              <div class="voice-controls"><button id="muteBtn" class="secondary-button control-button" disabled><span id="muteIcon">♬</span><span id="muteText">Mute mic</span></button><button id="retryVoiceBtn" class="secondary-button control-button" disabled>Reconnect audio</button></div>
+              <audio id="remoteAudio" autoplay playsinline></audio>
+            </section>
+            <section class="metrics-panel panel">
+              <div class="panel-heading compact"><div><p class="section-kicker">03 / TELEMETRY</p><h2>Connection health</h2></div><span class="metrics-live"><i></i> LIVE</span></div>
+              <div class="metrics-grid">
+                <div class="metric-card"><span class="metric-label">ROUND-TRIP TIME</span><div><strong id="rttMetric">—</strong><small>ms</small></div><span id="rttHint" class="metric-hint">Waiting for stats</span></div>
+                <div class="metric-card"><span class="metric-label">PACKET LOSS</span><div><strong id="lossMetric">—</strong><small>%</small></div><span id="lossHint" class="metric-hint">Inbound audio</span></div>
+                <div class="metric-card"><span class="metric-label">JITTER</span><div><strong id="jitterMetric">—</strong><small>ms</small></div><span class="metric-hint">Audio variation</span></div>
+                <div class="metric-card"><span class="metric-label">RECEIVED PACKETS</span><div><strong id="packetsMetric">0</strong></div><span class="metric-hint">Inbound audio</span></div>
+              </div>
+              <div class="chart-heading"><span>Jitter over time</span><span id="chartRange">Last 60 samples</span></div><canvas id="jitterChart" height="76" aria-label="Jitter over time chart"></canvas>
+              <div class="metrics-footer"><span>Stats from browser WebRTC</span><button id="exportBtn" class="text-button">Export CSV ↗</button></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="how-row" id="howRow"><div class="how-item"><span class="how-number">01</span><div><strong>Create a room</strong><p>Pick a name and share the unique room code.</p></div></div><div class="how-item"><span class="how-number">02</span><div><strong>Connect a peer</strong><p>Open the same room from another browser or device.</p></div></div><div class="how-item"><span class="how-number">03</span><div><strong>Talk & inspect</strong><p>Voice streams peer-to-peer; text uses the signaling server.</p></div></div></section>
+      <footer><span>RELAY / NETWORK LAB <span class="footer-dot">●</span> BROWSER EDITION</span><span>Built for learning · Not for sensitive conversations</span></footer>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

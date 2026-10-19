@@ -1,0 +1,1 @@
+"""Browser edition of the text and voice chat project."""
