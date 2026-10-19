@@ -97,12 +97,16 @@ def test_chat_message_length_is_limited():
 
 def test_ice_config_returns_stun_and_optional_turn(monkeypatch):
     with TestClient(app) as client:
-        default = client.get("/ice-config").json()["iceServers"]
+        default_response = client.get("/ice-config").json()
+        default = default_response["iceServers"]
         assert any(item["urls"].startswith("stun:") for item in default)
+        assert default_response["turnConfigured"] is False
         monkeypatch.setenv("TURN_URLS", "turn:relay.example:3478,turns:relay.example:5349")
         monkeypatch.setenv("TURN_USERNAME", "temporary-user")
         monkeypatch.setenv("TURN_CREDENTIAL", "temporary-password")
-        relay = client.get("/ice-config").json()["iceServers"][-1]
+        configured = client.get("/ice-config").json()
+        relay = configured["iceServers"][-1]
+        assert configured["turnConfigured"] is True
         assert relay["urls"] == ["turn:relay.example:3478", "turns:relay.example:5349"]
         assert relay["username"] == "temporary-user"
         assert relay["credential"] == "temporary-password"
