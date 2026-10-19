@@ -91,9 +91,10 @@ async def ice_config() -> JSONResponse:
     turn_urls = [url.strip() for url in os.getenv("TURN_URLS", "").split(",") if url.strip()]
     turn_username = os.getenv("TURN_USERNAME", "").strip()
     turn_credential = os.getenv("TURN_CREDENTIAL", "").strip()
-    if turn_urls and turn_username and turn_credential:
+    turn_configured = bool(turn_urls and turn_username and turn_credential)
+    if turn_configured:
         servers.append({"urls": turn_urls, "username": turn_username, "credential": turn_credential})
-    return JSONResponse({"iceServers": servers})
+    return JSONResponse({"iceServers": servers, "turnConfigured": turn_configured})
 
 
 async def safe_send(peer: Peer, payload: dict[str, Any]) -> bool:
