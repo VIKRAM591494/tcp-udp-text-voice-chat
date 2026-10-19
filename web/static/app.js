@@ -150,6 +150,14 @@
     els.muteIcon.textContent = '♬';
     setVoiceStatus('Microphone enabled', 'Waiting for the second participant to establish the audio link.', 'MIC READY', false);
   }
+  function releaseLocalMedia() {
+    if (localStream) for (const track of localStream.getTracks()) track.stop();
+    localStream = null;
+    muted = false;
+    els.mute.disabled = true;
+    els.muteText.textContent = 'Mute mic';
+    els.muteIcon.textContent = '♬';
+  }
   async function joinRoom(event) {
     event.preventDefault();
     if (joined) return;
@@ -199,6 +207,7 @@
       setSocketStatus('CONNECTION ERROR', false);
       toast('Could not connect to the room server. Try again shortly.');
       if (!joined) {
+        releaseLocalMedia();
         els.join.disabled = false;
         els.join.querySelector('span').textContent = 'Enable mic & join';
       }
@@ -258,6 +267,7 @@
       case 'error':
         toast(data.message || 'Server rejected an operation.');
         if (!joined) {
+          releaseLocalMedia();
           els.join.disabled = false;
           els.join.querySelector('span').textContent = 'Enable mic & join';
         }
@@ -299,8 +309,12 @@
     pc.onconnectionstatechange = () => {
       if (!pc) return;
       if (pc.connectionState === 'connected') {
-        setVoiceStatus('Voice connected', 'Peer-to-peer audio link is active. Connection stats update below.', 'CONNECTED', true);
-        els.remoteState.textContent = 'Voice connected';
+        if (els.remoteAudio.srcObject) {
+          setVoiceStatus('Voice connected', 'Peer-to-peer audio link is active. Connection stats update below.', 'CONNECTED', true);
+          els.remoteState.textContent = 'Voice connected';
+        } else {
+          setVoiceStatus('Network path connected', 'ICE connected; waiting for a remote audio track. Check that both peers allowed microphone access.', 'NO AUDIO', false);
+        }
         startStats();
       } else if (pc.connectionState === 'connecting') {
         setVoiceStatus('Connecting audio…', 'Negotiating an encrypted WebRTC media connection.', 'CONNECTING', false);
@@ -375,10 +389,7 @@
       try { current.close(1000, 'user left'); } catch { /* already closed */ }
     }
     resetPeerState();
-    if (localStream) {
-      for (const track of localStream.getTracks()) track.stop();
-      localStream = null;
-    }
+    releaseLocalMedia();
     clientId = null;
     remotePeerId = null;
     isInitiator = false;
