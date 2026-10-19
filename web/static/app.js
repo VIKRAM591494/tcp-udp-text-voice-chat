@@ -37,9 +37,16 @@
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun.cloudflare.com:3478' }
   ];
+  let turnConfigured = false;
   const iceConfigPromise = fetch('/ice-config', { cache: 'no-store' })
     .then(response => response.ok ? response.json() : Promise.reject(new Error('ICE config unavailable')))
-    .then(config => { if (Array.isArray(config.iceServers) && config.iceServers.length) iceServers = config.iceServers; })
+    .then(config => {
+      if (Array.isArray(config.iceServers) && config.iceServers.length) iceServers = config.iceServers;
+      turnConfigured = Boolean(config.turnConfigured ?? iceServers.some(server => {
+        const urls = Array.isArray(server.urls) ? server.urls : [server.urls];
+        return urls.some(url => typeof url === 'string' && /^turns?:/i.test(url));
+      }));
+    })
     .catch(() => {});
 
   function makeRoomCode() {
@@ -318,8 +325,13 @@
         startStats();
       } else if (pc.connectionState === 'connecting') {
         setVoiceStatus('Connecting audio…', 'Negotiating an encrypted WebRTC media connection.', 'CONNECTING', false);
-      } else if (['disconnected', 'failed'].includes(pc.connectionState)) {
-        setVoiceStatus('Audio link interrupted', 'Check the network or try reconnecting audio. A TURN relay may be needed on restrictive networks.', 'RETRY', false);
+      } else if (pc.connectionState === 'disconnected') {
+        setVoiceStatus('Audio path interrupted', 'The browser lost its media path. It may recover; if not, retry audio after checking both networks.', 'RETRY', false);
+      } else if (pc.connectionState === 'failed') {
+        const hint = turnConfigured
+          ? 'WebRTC could not establish a media path even with TURN configured. Check the TURN credential/allowed transports, then retry on both browsers.'
+          : 'This deployment has STUN only, with no TURN relay configured. Add TURN_URLS, TURN_USERNAME and TURN_CREDENTIAL in Render → Environment, save, then rejoin both browsers.';
+        setVoiceStatus('Voice connection failed', hint, 'TURN NEEDED', false);
       }
     };
     return pc;
