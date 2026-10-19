@@ -1,0 +1,4 @@
+# GUI, sockets, queues, and threading are in the Python standard library.
+# sounddevice is the real PortAudio microphone/speaker backend.
+sounddevice>=0.4.7
+pytest>=8.0
